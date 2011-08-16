@@ -18,7 +18,7 @@ class Person(var firstName: String, var lastName: String, var age: Int) {
     firstName = value
     
   def setLastName(value: String): Unit = 
-    lastName = value
+    lastName = value 
     
   def setAge(value: Int): Unit = 
     age = value
