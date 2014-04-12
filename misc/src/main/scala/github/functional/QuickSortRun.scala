@@ -1,7 +1,9 @@
 package com.example.functional
 
+import scala.language.postfixOps
+
 object QuickSortRun {
-  
+
   def sort(xs: Array[Int]): Array[Int] =
 
     if (xs.length <= 1) {
@@ -15,18 +17,13 @@ object QuickSortRun {
     }
 
   def main(args: Array[String]) {
-    /*
-     * TODO: How can I assign array values in one shot?
-     */
-    val toSort = new Array[Int](3)
-    toSort(0) = 2 // 2, 1, 3
-    toSort(1) = 1
-    toSort(2) = 3
+
+    val toSort = Array(2,1,3)
     val sorted = sort(toSort)
 
-    for (i <- sorted) { 	
+    for (i <- sorted) {
       println(i)
     }
-    
+
   }
 }
