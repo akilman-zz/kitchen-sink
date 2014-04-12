@@ -10,10 +10,10 @@ class Rational(n:Int, d:Int)
     else gcd(y%x, x)
   }
   private val g = gcd(n,d)
-  
+
   val numer:Int = n/g
   val denom:Int = d/g
-  
+
   def +(that:Rational) =
     new Rational(numer*that.denom + that.numer*denom, denom * that.denom)
   def -(that:Rational) =
@@ -27,7 +27,7 @@ class Rational(n:Int, d:Int)
     "Rational: [" + numer + " / " + denom + "]"
 }
 
-object RunRational extends Application
+object RunRational extends App
 {
   val r1 = new Rational(1, 3)
   val r2 = new Rational(2, 5)
