@@ -1,7 +1,7 @@
 package stuff;
 
-import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.partitioningBy;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
@@ -81,10 +81,12 @@ public class Chapter1Exercises {
   public void testFileSort() throws Exception {
     File[] initialFiles = new File(".").listFiles();
 
+    // create a map of 'isDirectory' to list of files via partition
     final Map<Boolean, List<File>>
         isDirVsFiles =
         Stream.of(initialFiles).collect(partitioningBy(File::isDirectory));
 
+    // sort in ascending order
     final Comparator<File> ascendingComparator = (f1, f2) -> f1.compareTo(f2);
 
     final List<File> ds = isDirVsFiles.get(true);
@@ -93,12 +95,15 @@ public class Chapter1Exercises {
     final List<File> fs = isDirVsFiles.get(false);
     fs.sort(ascendingComparator);
 
+    // combine
     List<File> result = new ArrayList<File>();
     result.addAll(ds);
     result.addAll(fs);
 
-    // todo
-//    assertThat(result.indexOf("./classes"), lessThan(result.indexOf("./src")));
+    // to assert, transform into a list of file names
+    List<String> combine = result.stream().map(f -> f.getName()).collect(toList());
+
+    assertThat(combine.indexOf("classes"), lessThan(combine.indexOf("src")));
   }
 
   class Person {
