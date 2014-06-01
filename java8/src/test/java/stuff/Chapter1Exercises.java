@@ -6,7 +6,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 import org.testng.annotations.Test;
 
@@ -16,8 +19,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-import java.util.stream.IntStream;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 /**
@@ -34,6 +40,19 @@ public class Chapter1Exercises {
     assertEquals(people.length, 2);
     assertEquals(people[0].name, "bar");
     assertEquals(people[1].name, "baz");
+  }
+
+  class Person {
+    String name;
+
+    Person(String name) {
+      this.name = name;
+    }
+
+    @Override
+    public String toString() {
+      return name;
+    }
   }
 
   /**
@@ -106,21 +125,109 @@ public class Chapter1Exercises {
     assertThat(combine.indexOf("classes"), lessThan(combine.indexOf("src")));
   }
 
-  class Person {
-    String name;
+  /**
+   * Exercise 5
+   * @throws Exception
+   */
+  @Test
+  public void testRunnableWithLambda() throws Exception {
+    ExecutorService pool = Executors.newFixedThreadPool(1);
+    Future<Integer> future = pool.submit(() -> 1 + 1);
+    int result = future.get();
+    assertEquals(result, 2);
+  }
 
-    Person(String name) {
-      this.name = name;
-    }
+  /**
+   * Exercise 6
+   * @return
+   */
+  @Test
+  public void testUncheckedRunnable() throws Exception {
+    // create a runnable which always throws an exception, terminating the thread
+    Runnable r =
+        // uncheck will intercept the exception
+        uncheck(() -> {
+          throw new Exception();
+        });
 
-    @Override
-    public String toString() {
-      return name;
+    Thread t = new Thread(r);
+
+    // configure a handler to determine if the exception actually did terminate the thread
+    AtomicBoolean errorOccurred = new AtomicBoolean(false);
+    Thread.UncaughtExceptionHandler exceptionHandler =
+        (thread, throwable) -> errorOccurred.set(true);
+    t.setUncaughtExceptionHandler(exceptionHandler);
+
+    // execute, block until complete
+    t.start();
+    t.join();
+
+    // ensure no error occurred
+    assertFalse(errorOccurred.get());
+  }
+
+  interface RunnableEx {
+    void run() throws Exception;
+  }
+
+  static Runnable uncheck(RunnableEx runner) {
+    return () -> {
+      try {
+        runner.run();
+      }
+      catch (Exception e)
+      {
+        // intentionally swallow
+      }
+    };
+  }
+
+  /**
+   * Exercise 7
+   * @throws Exception
+   */
+  @Test
+  public void testAndThen() throws Exception {
+    Runnable first = () -> System.out.println("first runnable");
+    Runnable second = () -> System.out.println("second runnable");
+    Runnable target = andThen(first, second);
+
+    Thread t = new Thread(target);
+    t.start();
+    try {
+      t.join();
+    } catch (InterruptedException e) {
+      fail("Something barfed", e);
     }
   }
 
-  private int [] createRandomIntArray(int size) {
-    Random generator = new Random(System.currentTimeMillis());
-    return IntStream.generate(() -> generator.nextInt()).limit(size).distinct().toArray();
+  static Runnable andThen(Runnable first, Runnable second) {
+    return () -> {
+      first.run();
+      second.run();
+    };
+  }
+
+  /**
+   * Exercise 8
+   * @throws Exception
+   */
+  @Test
+  public void testLambdaScoping() throws Exception {
+    String[] ns = { "Peter", "Paul", "Mary" };
+    List<Callable<String>> cs = new ArrayList<>();
+    for (String n : ns) {
+      cs.add(() -> n);
+    }
+
+    List<String> ss = new ArrayList<>();
+    for (Callable<String> c : cs) {
+      ss.add(c.call());
+    }
+
+    assertEquals(ss.size(), 3);
+    assertTrue(ss.contains("Peter"));
+    assertTrue(ss.contains("Paul"));
+    assertTrue(ss.contains("Mary"));
   }
 }
