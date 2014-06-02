@@ -16,7 +16,9 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.FileFilter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -24,6 +26,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -209,7 +213,7 @@ public class Chapter1Exercises {
   }
 
   /**
-   * Exercise 8
+   * Exercise 8 - Example of lexical scoping
    * @throws Exception
    */
   @Test
@@ -229,5 +233,159 @@ public class Chapter1Exercises {
     assertTrue(ss.contains("Peter"));
     assertTrue(ss.contains("Paul"));
     assertTrue(ss.contains("Mary"));
+  }
+
+  /**
+   * Exercise 9
+   * @throws Exception
+   */
+  @Test
+  public void testForEachIf() throws Exception {
+    {
+      SingletonStringList list = new SingletonStringList();
+      list.add("foo");
+
+      List<String> result = new ArrayList<>();
+      list.forEachIf(s -> result.add(s), s -> s.equals("bar"));
+      assertTrue(result.isEmpty());
+    }
+
+    {
+      SingletonStringList list = new SingletonStringList();
+      list.add("foo");
+
+      List<String> result = new ArrayList<>();
+      list.forEachIf(s -> result.add(s), s -> s.equals("foo"));
+      assertFalse(result.isEmpty());
+    }
+  }
+
+  static class SingletonStringList implements Collection2<String> {
+
+    private String s;
+
+    @Override
+    public int size() {
+      return s == null ? 0 : 1;
+    }
+
+    @Override
+    public boolean isEmpty() {
+      return s == null;
+    }
+
+    @Override
+    public boolean contains(Object o) {
+      return s.equals(o);
+    }
+
+    @Override
+    public Iterator<String> iterator() {
+      return new SingletonStringListIterator();
+    }
+
+    @Override
+    public Object[] toArray() {
+      return new String[]{s};
+    }
+
+    @Override
+    public <T> T[] toArray(T[] a) {
+      return null;
+    }
+
+    @Override
+    public boolean add(String s) {
+      this.s = s;
+      return this.s == s;
+    }
+
+    @Override
+    public boolean remove(Object o) {
+      if (s.equals(o)) {
+        s = null;
+        return true;
+      }
+
+      return false;
+    }
+
+    @Override
+    public boolean containsAll(Collection<?> c) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean addAll(Collection<? extends String> c) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean removeAll(Collection<?> c) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean retainAll(Collection<?> c) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void clear() {
+      this.s = null;
+    }
+
+    class SingletonStringListIterator implements Iterator<String> {
+
+      private boolean consumed;
+
+      @Override
+      public boolean hasNext() {
+        return s != null && !consumed;
+      }
+
+      @Override
+      public String next() {
+        consumed = true;
+        return s;
+      }
+    }
+  }
+
+  static interface Collection2<T> extends Collection<T> {
+    default void forEachIf(Consumer<T> action, Predicate<T> filter) {
+      for(T t : this) {
+        if (filter.test(t)) {
+          action.accept(t);
+        }
+      }
+    }
+  }
+
+  /**
+   * Exercise 11
+   */
+  static interface I {
+    void abstractMethod();
+    default void defaultMethod() {}
+    static void staticMethod() {}
+  }
+
+  static interface J {
+    void abstractMethod();
+    default void defaultMethod() {}
+    static void staticMethod() {}
+  }
+
+  class C implements I, J {
+    @Override
+    public void abstractMethod() {}
+
+    /**
+     * The default methods are ambiguous, thus the concrete class must resolve said
+     * ambiguity
+     */
+    @Override
+    public void defaultMethod() {}
   }
 }
